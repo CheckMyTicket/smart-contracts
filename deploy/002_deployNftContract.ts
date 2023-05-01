@@ -12,16 +12,10 @@ import { shouldVerifyContract } from '../utils/deploy';
 const deployFunction: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   const { deployer } = await hre.getNamedAccounts();
 
-  const deploy = await hre.deployments.deploy('Cryptobadies', {
-    contract: 'solidity/contracts/Cryptobadies.sol:Cryptobadies',
+  const deploy = await hre.deployments.deploy('Ticket', {
+    contract: 'solidity/contracts/Ticket.sol:Ticket',
     from: deployer,
-    args: [
-      'Kali Program',
-      'KP',
-      'https://cryptobadies.mypinata.cloud/ipfs/QmVGEpERyVRvYdP5wV7fwQXjsfxm6Wa7ofMJ8fxUD3iSFQ/',
-      46,
-      '0x20A76e3497baFFa5209784FCB4C4F30EA91D73A1',
-    ],
+    args: ['Name', 'TEST', 'URI', 46],
     log: true,
   });
 
@@ -33,5 +27,5 @@ const deployFunction: DeployFunction = async function (hre: HardhatRuntimeEnviro
   }
 };
 deployFunction.dependencies = [];
-deployFunction.tags = ['Cryptobadies'];
+deployFunction.tags = ['Ticket'];
 export default deployFunction;

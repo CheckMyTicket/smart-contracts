@@ -17,14 +17,12 @@ async function main(network: string) {
   const ownerAddress = await cbFactoryContract.connect(signer).owner();
   console.log(`Owner address: ${ownerAddress}`);
   console.log(`Sending Tx on ${network} network`);
-  let DeployCollection: TransactionResponse = await cbFactoryContract
-    .connect(signer)
-    .newCollection('Cb2', 'Cb2', 'https://gateway.pinata.cloud/ipfs/QmYmu2yVPDyd6fDZ2GQnwE9s1g6BGL2K5XBzSpeHCoA2by/', 46);
+  let DeployCollection: TransactionResponse = await cbFactoryContract.connect(signer).newCollection('Cb2', 'Cb2', 'url', 46);
   console.log('Tx sent...');
   console.log('Waiting Tx');
   // Get arguments from Event DeployCollection
   const deployCollectionEvent = await readArgFromEvent(DeployCollection, 'DeployCollection', 'nftAddress');
-  console.log('Cryptobadies collection address:', deployCollectionEvent);
+  console.log('Collection address:', deployCollectionEvent);
   //   const DeployCollectionReceipt: TransactionReceipt = await DeployCollection.wait();
   //   console.log('Tx receipt', DeployCollectionReceipt);
 }
