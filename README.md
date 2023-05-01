@@ -1,22 +1,10 @@
-# Hardhat Boilerplate
-
-## Why ?
-
-Thought to have a fast way of bootstraping projects with best practice's in mind. Having linters, prettiers, standards on how to commit, and changelog creation & maintenance.
-
----
-
-## How ?
-
-This is achieved using several hardhat plugins, and external known packages.
-
----
+# Check My Tickets Smart Contracts
 
 ## Setup
 
 ```bash
 # Install dependencies
-yarn install
+npm install
 # Copy Env example file
 cp .env.example .env
 ```
@@ -30,16 +18,10 @@ You can generate your API KEY in the [Alchemy site](https://www.alchemy.com).
 
 ## Tools
 
-This boilerplate includes:
+This repository includes:
 
-- [Hardhat](https://hardhat.org/)
-- [Solhint](https://github.com/protofire/solhint)
-- [Prettier](https://github.com/prettier-solidity/prettier-plugin-solidity)
-- [Coverage](https://github.com/sc-forks/solidity-coverage)
-- [Gas reporter](https://github.com/cgewecke/hardhat-gas-reporter/tree/master)
-- [Commitlint](https://github.com/conventional-changelog/commitlint)
-- [Standard version](https://github.com/conventional-changelog/standard-version)
-- [Uniswap](https://github.com/Uniswap/uniswap-v2-periphery) + [Internal tooling](./test/utils/uniswap.ts)
+- The resell marketplace smart contract
+- The ticket smart contract
 
 ---
 
@@ -48,7 +30,7 @@ This boilerplate includes:
 ### **Coverage**
 
 ```bash
-yarn coverage
+npm run coverage
 ```
 
 Runs solidity code coverage
@@ -57,19 +39,19 @@ Runs solidity code coverage
 ### **Fork**
 
 ```bash
-yarn fork
+npm run fork
 ```
 
 Runs a mainnet fork via hardhat's node forking util.
 
 ```bash
-yarn fork:script {path}
+npm run fork:script {path}
 ```
 
 Runs the script in mainnet's fork.
 
 ```
-yarn fork:test
+npm run fork:test
 ```
 
 Runs tests that should be run in mainnet's fork.
@@ -78,7 +60,7 @@ Runs tests that should be run in mainnet's fork.
 ### **Lint**
 
 ```bash
-yarn lint:check
+npm run lint:check
 ```
 
 Runs solhint.
@@ -87,7 +69,7 @@ Runs solhint.
 ### **Prettier (lint fix)**
 
 ```bash
-yarn lint:fix
+npm run lint:fix
 ```
 
 Runs prettier
@@ -96,7 +78,7 @@ Runs prettier
 ### **Release**
 
 ```bash
-yarn release
+npm run release
 ```
 
 Runs standard changelog, changes package.json version and modifies CHANGELOG.md accordingly.
@@ -105,21 +87,21 @@ Runs standard changelog, changes package.json version and modifies CHANGELOG.md 
 ### **Test**
 
 ```bash
-yarn test:all
+npm run test:all
 ```
 
 Runs all solidity tests.
 <br/>
 
 ```bash
-yarn test:unit
+npm run test:unit
 ```
 
 Runs all solidity tests in folder [unit](./test/unit)
 <br/>
 
 ```bash
-yarn test:e2e
+npm run test:e2e
 ```
 
 Runs all solidity tests in folder [e2e](./test/e2e)
@@ -128,7 +110,22 @@ Runs all solidity tests in folder [e2e](./test/e2e)
 ### **Gas report**
 
 ```bash
-yarn test:gas
+npm run test:gas
 ```
 
 Runs all tests and report gas usage.
+
+### **Deploy**
+
+```bash
+npm run deploy:goerli
+```
+
+Deploy ticket contract in goerli.
+<br/>
+
+```bash
+npm run deploy:rinkeby
+```
+
+Deploy ticket contract in rinkeby.
