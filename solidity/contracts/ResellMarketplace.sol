@@ -49,11 +49,12 @@ contract NFTMarketplace is OwnableUpgradeable, ReentrancyGuardUpgradeable {
   }
   ///@dev To track offers
   mapping(uint256 => MarketOffer) private idToMarketOffer;
+  mapping(address => bool) public contractIsAllowed;
 
   ///EVENTS
   event ItemOfferCreated(
     uint256 indexed offerId,
-    address indexed nftContract,
+    address indexed ticketContract,
     uint256 indexed tokenId,
     uint256 _amount,
     uint256 offerBegin,
@@ -79,12 +80,23 @@ contract NFTMarketplace is OwnableUpgradeable, ReentrancyGuardUpgradeable {
     );
     _;
   }
+  ///@dev Ensure the seller owns NFT tokens
+  modifier isAllowed(
+    address _ticketContract,
+  ) {
+    require(contractIsAllowed[_ticketContract] == true,'This contract is not allowed in the marketplace');
+    _;
+  }
 
   /// @dev Set initial values for our contract
   function initialize(uint256 _fee, address _recipient) public initializer {
     __Ownable_init();
     fee = _fee;
     recipient = _recipient;
+  }
+
+  function addTicketContract(address _ticketContract) public onlyOwner {
+    contractIsAllowed[_ticketContract] = true;
   }
 
   ///@notice Only the owner can set the fee
@@ -119,13 +131,13 @@ contract NFTMarketplace is OwnableUpgradeable, ReentrancyGuardUpgradeable {
   ///@param _price The price of the offer in USD
   ///@dev The price in USD is worked in DAI tokens
   function createMarketOffer(
-    address _nftContract,
+    address _ticketContract,
     uint256 _tokenId,
     uint256 _amount,
     uint256 _deadline,
     uint256 _price
-  ) public payable nonReentrant lessthanowned(_nftContract, _tokenId, _amount) {
-    require(_price > 0, 'Price must be at least 1 Dollar');
+  ) public payable nonReentrant lessthanowned(_ticketContract, _tokenId, _amount) isAllowed(_ticketContract) {
+    require(_price > 0, 'More than 0');
     _offerIds.increment();
     uint256 offerId = _offerIds.current();
     uint256 time = block.timestamp;
@@ -133,7 +145,7 @@ contract NFTMarketplace is OwnableUpgradeable, ReentrancyGuardUpgradeable {
 
     idToMarketOffer[offerId] = MarketOffer(
       offerId,
-      _nftContract,
+      _ticketContract,
       _tokenId,
       _amount,
       block.timestamp,
@@ -145,7 +157,7 @@ contract NFTMarketplace is OwnableUpgradeable, ReentrancyGuardUpgradeable {
 
     emit ItemOfferCreated(
       idToMarketOffer[offerId].offerId,
-      idToMarketOffer[offerId].nftContract,
+      idToMarketOffer[offerId].ticketContract,
       idToMarketOffer[offerId].tokenId,
       idToMarketOffer[offerId]._amount,
       idToMarketOffer[offerId].offerBegin,
@@ -172,9 +184,9 @@ contract NFTMarketplace is OwnableUpgradeable, ReentrancyGuardUpgradeable {
     //Initial requirements
     require(idToMarketOffer[_offerId].offerExist, 'The offer does not exist');
 
-    address _nftContract = idToMarketOffer[_offerId].nftContract;
+    address _ticketContract = idToMarketOffer[_offerId].ticketContract;
     uint256 _tokenId = idToMarketOffer[_offerId].tokenId;
-    uint256 balanceOfTokens = ERC721Upgradeable(_nftContract).balanceOf(idToMarketOffer[_offerId].owner);
+    uint256 balanceOfTokens = ERC721Upgradeable(_ticketContract).balanceOf(idToMarketOffer[_offerId].owner);
     uint256 amount = idToMarketOffer[_offerId]._amount;
     address payable owner = idToMarketOffer[_offerId].owner;
 
