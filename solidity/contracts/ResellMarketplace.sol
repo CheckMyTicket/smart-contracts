@@ -9,6 +9,7 @@ import {ReentrancyGuardUpgradeable} from '@openzeppelin/contracts-upgradeable/se
 import {CountersUpgradeable} from '@openzeppelin/contracts-upgradeable/utils/CountersUpgradeable.sol';
 import {ERC1155Upgradeable} from '@openzeppelin/contracts-upgradeable/token/ERC1155/ERC1155Upgradeable.sol';
 import {ERC20Upgradeable} from '@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol';
+import {ERC721Upgradeable} from '@openzeppelin/contracts-upgradeable/token/ERC1155/ERC721Upgradeable.sol';
 
 /// TODO CHANGE CONTRACT FOR RESELL MARKETPLACE
 /// TODO CHANGE CONTRACT FOR TICKET
@@ -73,7 +74,7 @@ contract NFTMarketplace is OwnableUpgradeable, ReentrancyGuardUpgradeable {
     uint256 _amount
   ) {
     require(
-      _amount <= ERC1155Upgradeable(_nftContract).balanceOf(msg.sender, _tokenId),
+      _amount <= ERC721Upgradeable(_nftContract).balanceOf(msg.sender, _tokenId),
       'Amount of tokens must be less or equal to the ones you own'
     );
     _;
@@ -173,29 +174,13 @@ contract NFTMarketplace is OwnableUpgradeable, ReentrancyGuardUpgradeable {
 
     address _nftContract = idToMarketOffer[_offerId].nftContract;
     uint256 _tokenId = idToMarketOffer[_offerId].tokenId;
-    uint256 balanceOfTokens = ERC1155Upgradeable(_nftContract).balanceOf(idToMarketOffer[_offerId].owner, _tokenId);
+    uint256 balanceOfTokens = ERC721Upgradeable(_nftContract).balanceOf(idToMarketOffer[_offerId].owner);
     uint256 amount = idToMarketOffer[_offerId]._amount;
     address payable owner = idToMarketOffer[_offerId].owner;
 
     if (balanceOfTokens < amount || idToMarketOffer[_offerId]._deadline < block.timestamp) {
       idToMarketOffer[_offerId].offerExist = false;
-      revert('The offer is not available anymore');
-    }
-
-    //DAI
-    if (keccak256(abi.encodePacked((_token))) == keccak256(abi.encodePacked(('DAI')))) {
-      uint256 offerPriceInDAI = getPriceInDAI(_offerId);
-      //Implement fee
-      uint256 price = offerPriceInDAI;
-      uint256 feePrice = SafeMathUpgradeable.div(SafeMathUpgradeable.mul(offerPriceInDAI, fee), 100);
-      uint256 priceAfterFee = SafeMathUpgradeable.sub(price, feePrice);
-      sendFeeDAI(feePrice);
-
-      bool sent = ERC20Upgradeable(0x6B175474E89094C44Da98b954EedeAC495271d0F).transferFrom(msg.sender, owner, priceAfterFee);
-      require(sent);
-      ERC1155Upgradeable(_nftContract).safeTransferFrom(owner, msg.sender, _tokenId, amount, '');
-      idToMarketOffer[_offerId].offerExist = false;
-      emit OfferAccepted(idToMarketOffer[_offerId].offerExist, sent);
+      revert('The offer is not available');
     }
 
     //ETHEREUM
@@ -208,8 +193,8 @@ contract NFTMarketplace is OwnableUpgradeable, ReentrancyGuardUpgradeable {
       sendFeeETH(feePrice);
 
       (bool sent, ) = owner.call{value: priceAfterFee}('');
-      require(sent);
-      ERC1155Upgradeable(_nftContract).safeTransferFrom(owner, msg.sender, _tokenId, amount, '');
+      require(sent, 'Failed transfer');
+      ERC721Upgradeable(_nftContract).safeTransferFrom(owner, msg.sender, _tokenId);
 
       ///@dev Return leftovers of ETH
       (bool success, ) = msg.sender.call{value: address(this).balance}('');
@@ -217,29 +202,6 @@ contract NFTMarketplace is OwnableUpgradeable, ReentrancyGuardUpgradeable {
       idToMarketOffer[_offerId].offerExist = false;
       emit OfferAccepted(idToMarketOffer[_offerId].offerExist, sent);
     }
-
-    //LINK
-    if (keccak256(abi.encodePacked((_token))) == keccak256(abi.encodePacked(('LINK')))) {
-      uint256 offerPriceInLINK = getPriceInLINK(_offerId);
-      //Implement fee
-      uint256 price = offerPriceInLINK;
-      uint256 feePrice = SafeMathUpgradeable.div(SafeMathUpgradeable.mul(offerPriceInLINK, fee), 100);
-      uint256 priceAfterFee = SafeMathUpgradeable.sub(price, feePrice);
-      sendFeeLINK(feePrice);
-
-      bool sent = ERC20Upgradeable(0x514910771AF9Ca656af840dff83E8264EcF986CA).transferFrom(msg.sender, owner, priceAfterFee);
-      require(sent);
-      ERC1155Upgradeable(_nftContract).safeTransferFrom(owner, msg.sender, _tokenId, amount, '');
-      idToMarketOffer[_offerId].offerExist = false;
-      emit OfferAccepted(idToMarketOffer[_offerId].offerExist, sent);
-    }
-  }
-
-  ///@notice Get price of the offer in DAI
-  ///@dev Notice the units
-  function getPriceInDAI(uint256 _offerId) public view returns (uint256) {
-    uint256 offerPriceInDAI = SafeMathUpgradeable.mul(uint256(idToMarketOffer[_offerId].price), 1 * 10 ** 18);
-    return offerPriceInDAI;
   }
 
   ///@notice Get price of the offer in ETH
@@ -251,16 +213,6 @@ contract NFTMarketplace is OwnableUpgradeable, ReentrancyGuardUpgradeable {
     return offerPriceInETH;
   }
 
-  ///@notice Get price of the offer in LINK
-  ///@dev Notice the units
-  function getPriceInLINK(uint256 _offerId) public view returns (uint256) {
-    address LINKETH = 0xDC530D9457755926550b59e8ECcdaE7624181557;
-    uint256 LINKPrice = uint256(getLatestPrice(LINKETH));
-    uint256 offerPriceInETH = getPriceInETH(_offerId);
-    uint256 offerPriceInLINK = SafeMathUpgradeable.mul(SafeMathUpgradeable.div((offerPriceInETH), LINKPrice), 1 * 10 ** 18);
-    return offerPriceInLINK;
-  }
-
   ///@notice Using this function will send ETH to the recipient
   ///@param _fee The cost of the fee
   function sendFeeETH(uint256 _fee) public payable {
@@ -269,22 +221,6 @@ contract NFTMarketplace is OwnableUpgradeable, ReentrancyGuardUpgradeable {
     // account[1] of Hardhat node
 
     (bool sent, ) = recipient.call{value: _fee}('');
-    require(sent, 'Fee transaction failed');
-  }
-
-  ///@notice Using this function will send DAI to the recipient
-  function sendFeeDAI(uint256 _fee) public payable {
-    bool sent = ERC20Upgradeable(0x6B175474E89094C44Da98b954EedeAC495271d0F).transferFrom(msg.sender, recipient, _fee);
-    require(sent, 'Fee transaction failed');
-  }
-
-  ///@notice Using this function will send LINK to the recipient
-  function sendFeeLINK(uint256 _fee) public payable {
-    // Call returns a boolean value indicating success or failure.
-    // This is the current recommended method to use.
-    // account[1] of Hardhat node
-
-    bool sent = ERC20Upgradeable(0x514910771AF9Ca656af840dff83E8264EcF986CA).transferFrom(msg.sender, recipient, _fee);
     require(sent, 'Fee transaction failed');
   }
 

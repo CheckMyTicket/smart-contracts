@@ -9,6 +9,7 @@ import {ReentrancyGuard} from '@openzeppelin/contracts/security/ReentrancyGuard.
 
 /// TODO CHANGE CONTRACT FOR RESELL MARKETPLACE
 /// TODO CHANGE CONTRACT FOR TICKET
+/// ERC1155 allows to create more complex tickets
 
 contract Ticket is ERC721, Pausable, Ownable, ReentrancyGuard {
   using Counters for Counters.Counter;
