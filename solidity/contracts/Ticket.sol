@@ -20,7 +20,7 @@ contract Ticket is ERC721, Pausable, Ownable, ReentrancyGuard {
   Counters.Counter private _tokenIdCounter;
   event PriceSet(uint256 price);
 
-  constructor(string memory name, string memory symbol, string memory _baseUri, uint8 _totalSupply) ERC721(name, symbol) {
+  constructor(string memory name, string memory symbol, string memory _baseUri, uint24 _totalSupply) ERC721(name, symbol) {
     totalSupply = _totalSupply; //Set total supply
     baseUri = _baseUri;
   }
@@ -48,8 +48,8 @@ contract Ticket is ERC721, Pausable, Ownable, ReentrancyGuard {
   }
 
   function setPrice(uint256 _price) public onlyOwner {
-    nftPrice = _price;
-    emit PriceSet(nftPrice);
+    ticketPrice = _price;
+    emit PriceSet(ticketPrice);
   }
 
   function mintTicket(address _to) public payable nonReentrant {
@@ -67,6 +67,6 @@ contract Ticket is ERC721, Pausable, Ownable, ReentrancyGuard {
 
   function withdraw() public onlyOwner {
     uint balance = address(this).balance;
-    msg.sender.transfer(balance);
+    payable(msg.sender).transfer(balance);
   }
 }
