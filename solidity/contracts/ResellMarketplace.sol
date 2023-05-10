@@ -17,7 +17,7 @@ import {ERC721Upgradeable} from '@openzeppelin/contracts-upgradeable/token/ERC72
 /// @title NFT Marketplace
 /// @author AboveZtars
 /// @dev NFT Marketplace is inheriting from OwnableUpgradeable and OwnableUpgradeable is inheriting from Initializable, then NFTMarketplace is Initializable
-contract NFTMarketplace is OwnableUpgradeable, ReentrancyGuardUpgradeable {
+contract ResellMarketplace is OwnableUpgradeable, ReentrancyGuardUpgradeable {
   uint256 public fee;
   address public recipient;
 
@@ -30,7 +30,6 @@ contract NFTMarketplace is OwnableUpgradeable, ReentrancyGuardUpgradeable {
   ///@param offerId The Id of the offer in the marketplace
   ///@param nftContract The address of the nft token
   ///@param tokenId The Id of the nft token
-  ///@param _amount The amount of nft token items to sell
   ///@param offerBegin The amount of nft token items to sell
   ///@param _deadline The time that will last the offer
   ///@param owner The owner of the nft token
@@ -40,7 +39,6 @@ contract NFTMarketplace is OwnableUpgradeable, ReentrancyGuardUpgradeable {
     uint256 offerId;
     address ticketContract;
     uint256 tokenId;
-    uint256 _amount;
     uint256 offerBegin;
     uint256 _deadline;
     address payable owner;
@@ -48,7 +46,7 @@ contract NFTMarketplace is OwnableUpgradeable, ReentrancyGuardUpgradeable {
     bool offerExist;
   }
   ///@dev To track offers
-  mapping(uint256 => MarketOffer) private idToMarketOffer;
+  mapping(uint256 => MarketOffer) private _idToMarketOffer;
   mapping(address => bool) public contractIsAllowed;
 
   ///EVENTS
@@ -56,7 +54,6 @@ contract NFTMarketplace is OwnableUpgradeable, ReentrancyGuardUpgradeable {
     uint256 indexed offerId,
     address indexed ticketContract,
     uint256 indexed tokenId,
-    uint256 _amount,
     uint256 offerBegin,
     uint256 _deadline,
     address payable owner,
@@ -67,14 +64,12 @@ contract NFTMarketplace is OwnableUpgradeable, ReentrancyGuardUpgradeable {
 
   event OfferAccepted(bool offerExist, bool sent);
 
+  event ContractAdded(address contractAddress);
+
   ///MODIFIERS
   ///@dev Ensure the seller owns NFT tokens
-  modifier lessthanowned(
-    address _nftContract,
-    uint256 _tokenId,
-    uint256 _amount
-  ) {
-    require(_amount <= ERC721Upgradeable(_nftContract).balanceOf(msg.sender), 'Amount of tokens must be less or equal to the ones you own');
+  modifier sellerOwned721(address _ticketContract, uint256 _tokenId) {
+    require(ERC721Upgradeable(_ticketContract).balanceOf(msg.sender) > 0, 'Amount of tokens must be more than zero');
     _;
   }
   ///@dev Ensure the seller owns NFT tokens
@@ -92,6 +87,7 @@ contract NFTMarketplace is OwnableUpgradeable, ReentrancyGuardUpgradeable {
 
   function addTicketContract(address _ticketContract) public onlyOwner {
     contractIsAllowed[_ticketContract] = true;
+    emit ContractAdded(_ticketContract);
   }
 
   ///@notice Only the owner can set the fee
@@ -121,28 +117,25 @@ contract NFTMarketplace is OwnableUpgradeable, ReentrancyGuardUpgradeable {
   ///@notice Create an offer
   ///@param _ticketContract The address of the nft token
   ///@param _tokenId The Id of the nft token
-  ///@param _amount The amount of nft token items to sell
   ///@param _deadline The time that will last the offer
   ///@param _price The price of the offer in USD
   ///@dev The price in USD is worked in DAI tokens
   function createMarketOffer(
     address _ticketContract,
     uint256 _tokenId,
-    uint256 _amount,
     uint256 _deadline,
     uint256 _price
-  ) public payable nonReentrant lessthanowned(_ticketContract, _tokenId, _amount) isAllowed(_ticketContract) {
+  ) public payable nonReentrant sellerOwned721(_ticketContract, _tokenId) isAllowed(_ticketContract) {
     require(_price > 0, 'More than 0');
     _offerIds.increment();
     uint256 offerId = _offerIds.current();
     uint256 time = block.timestamp;
     uint256 deadlineTime = time + _deadline;
 
-    idToMarketOffer[offerId] = MarketOffer(
+    _idToMarketOffer[offerId] = MarketOffer(
       offerId,
       _ticketContract,
       _tokenId,
-      _amount,
       block.timestamp,
       deadlineTime,
       payable(msg.sender),
@@ -151,25 +144,24 @@ contract NFTMarketplace is OwnableUpgradeable, ReentrancyGuardUpgradeable {
     );
 
     emit ItemOfferCreated(
-      idToMarketOffer[offerId].offerId,
-      idToMarketOffer[offerId].ticketContract,
-      idToMarketOffer[offerId].tokenId,
-      idToMarketOffer[offerId]._amount,
-      idToMarketOffer[offerId].offerBegin,
-      idToMarketOffer[offerId]._deadline,
-      idToMarketOffer[offerId].owner,
-      idToMarketOffer[offerId].price
+      _idToMarketOffer[offerId].offerId,
+      _idToMarketOffer[offerId].ticketContract,
+      _idToMarketOffer[offerId].tokenId,
+      _idToMarketOffer[offerId].offerBegin,
+      _idToMarketOffer[offerId]._deadline,
+      _idToMarketOffer[offerId].owner,
+      _idToMarketOffer[offerId].price
     );
   }
 
   ///@notice Cancel an offer
   ///@param _offerId The Id of the offer
   function cancelOffer(uint256 _offerId) public {
-    require(idToMarketOffer[_offerId].owner == msg.sender, 'The offer does not exist');
-    require(idToMarketOffer[_offerId].offerExist, 'The offer does not exist');
+    require(_idToMarketOffer[_offerId].owner == msg.sender, 'The offer does not exist');
+    require(_idToMarketOffer[_offerId].offerExist, 'The offer does not exist');
 
-    idToMarketOffer[_offerId].offerExist = false;
-    emit OfferCanceled(idToMarketOffer[_offerId].offerExist);
+    _idToMarketOffer[_offerId].offerExist = false;
+    emit OfferCanceled(_idToMarketOffer[_offerId].offerExist);
   }
 
   ///@notice Accept an offer and pay for it
@@ -177,16 +169,15 @@ contract NFTMarketplace is OwnableUpgradeable, ReentrancyGuardUpgradeable {
   ///@param _token The token to pay
   function acceptOffer(uint256 _offerId, string memory _token) public payable nonReentrant {
     //Initial requirements
-    require(idToMarketOffer[_offerId].offerExist, 'The offer does not exist');
+    require(_idToMarketOffer[_offerId].offerExist, 'The offer does not exist');
 
-    address _ticketContract = idToMarketOffer[_offerId].ticketContract;
-    uint256 _tokenId = idToMarketOffer[_offerId].tokenId;
-    uint256 balanceOfTokens = ERC721Upgradeable(_ticketContract).balanceOf(idToMarketOffer[_offerId].owner);
-    uint256 amount = idToMarketOffer[_offerId]._amount;
-    address payable owner = idToMarketOffer[_offerId].owner;
+    address _ticketContract = _idToMarketOffer[_offerId].ticketContract;
+    uint256 _tokenId = _idToMarketOffer[_offerId].tokenId;
+    //uint256 balanceOfTokens = ERC721Upgradeable(_ticketContract).balanceOf(_idToMarketOffer[_offerId].owner);
+    address payable owner = _idToMarketOffer[_offerId].owner;
 
-    if (balanceOfTokens < amount || idToMarketOffer[_offerId]._deadline < block.timestamp) {
-      idToMarketOffer[_offerId].offerExist = false;
+    if (_idToMarketOffer[_offerId]._deadline < block.timestamp) {
+      _idToMarketOffer[_offerId].offerExist = false;
       revert('The offer is not available');
     }
 
@@ -206,17 +197,17 @@ contract NFTMarketplace is OwnableUpgradeable, ReentrancyGuardUpgradeable {
       ///@dev Return leftovers of ETH
       (bool success, ) = msg.sender.call{value: address(this).balance}('');
       require(success, 'refund failed');
-      idToMarketOffer[_offerId].offerExist = false;
-      emit OfferAccepted(idToMarketOffer[_offerId].offerExist, sent);
+      _idToMarketOffer[_offerId].offerExist = false;
+      emit OfferAccepted(_idToMarketOffer[_offerId].offerExist, sent);
     }
   }
 
   ///@notice Get price of the offer in ETH
   ///@dev Notice the units
   function getPriceInETH(uint256 _offerId) public view returns (uint256) {
-    address DAIETH = 0x773616E4d11A78F511299002da57A0a94577F1f4;
-    uint256 ETHPrice = uint256(getLatestPrice(DAIETH));
-    uint256 offerPriceInETH = SafeMathUpgradeable.mul(idToMarketOffer[_offerId].price, ETHPrice);
+    address daiEth = 0x773616E4d11A78F511299002da57A0a94577F1f4;
+    uint256 ethPrice = uint256(getLatestPrice(daiEth));
+    uint256 offerPriceInETH = SafeMathUpgradeable.mul(_idToMarketOffer[_offerId].price, ethPrice);
     return offerPriceInETH;
   }
 
