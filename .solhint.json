@@ -10,6 +10,7 @@
     "func-visibility": ["warn", { "ignoreConstructors": true }],
     "not-rely-on-time": "off",
     "private-vars-leading-underscore": ["warn", { "strict": false }],
-    "reason-string": ["warn", { "maxLength": 64 }]
+    "reason-string": ["warn", { "maxLength": 64 }],
+    "no-empty-blocks": "off"
   }
 }
