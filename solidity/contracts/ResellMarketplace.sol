@@ -9,7 +9,7 @@ import {ReentrancyGuardUpgradeable} from '@openzeppelin/contracts-upgradeable/se
 import {CountersUpgradeable} from '@openzeppelin/contracts-upgradeable/utils/CountersUpgradeable.sol';
 import {ERC1155Upgradeable} from '@openzeppelin/contracts-upgradeable/token/ERC1155/ERC1155Upgradeable.sol';
 import {ERC20Upgradeable} from '@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol';
-import {ERC721Upgradeable} from '@openzeppelin/contracts-upgradeable/token/ERC1155/ERC721Upgradeable.sol';
+import {ERC721Upgradeable} from '@openzeppelin/contracts-upgradeable/token/ERC721/ERC721Upgradeable.sol';
 
 /// TODO CHANGE CONTRACT FOR RESELL MARKETPLACE
 /// TODO CHANGE CONTRACT FOR TICKET
@@ -38,7 +38,7 @@ contract NFTMarketplace is OwnableUpgradeable, ReentrancyGuardUpgradeable {
   ///@param offerExist Boolean parameter to know when the offer exist
   struct MarketOffer {
     uint256 offerId;
-    address nftContract;
+    address ticketContract;
     uint256 tokenId;
     uint256 _amount;
     uint256 offerBegin;
@@ -74,17 +74,12 @@ contract NFTMarketplace is OwnableUpgradeable, ReentrancyGuardUpgradeable {
     uint256 _tokenId,
     uint256 _amount
   ) {
-    require(
-      _amount <= ERC721Upgradeable(_nftContract).balanceOf(msg.sender, _tokenId),
-      'Amount of tokens must be less or equal to the ones you own'
-    );
+    require(_amount <= ERC721Upgradeable(_nftContract).balanceOf(msg.sender), 'Amount of tokens must be less or equal to the ones you own');
     _;
   }
   ///@dev Ensure the seller owns NFT tokens
-  modifier isAllowed(
-    address _ticketContract,
-  ) {
-    require(contractIsAllowed[_ticketContract] == true,'This contract is not allowed in the marketplace');
+  modifier isAllowed(address _ticketContract) {
+    require(contractIsAllowed[_ticketContract] == true, 'This contract is not allowed in the marketplace');
     _;
   }
 
@@ -124,7 +119,7 @@ contract NFTMarketplace is OwnableUpgradeable, ReentrancyGuardUpgradeable {
 
   /* Places an item for sale on the marketplace */
   ///@notice Create an offer
-  ///@param _nftContract The address of the nft token
+  ///@param _ticketContract The address of the nft token
   ///@param _tokenId The Id of the nft token
   ///@param _amount The amount of nft token items to sell
   ///@param _deadline The time that will last the offer
@@ -206,7 +201,7 @@ contract NFTMarketplace is OwnableUpgradeable, ReentrancyGuardUpgradeable {
 
       (bool sent, ) = owner.call{value: priceAfterFee}('');
       require(sent, 'Failed transfer');
-      ERC721Upgradeable(_nftContract).safeTransferFrom(owner, msg.sender, _tokenId);
+      ERC721Upgradeable(_ticketContract).safeTransferFrom(owner, msg.sender, _tokenId);
 
       ///@dev Return leftovers of ETH
       (bool success, ) = msg.sender.call{value: address(this).balance}('');
