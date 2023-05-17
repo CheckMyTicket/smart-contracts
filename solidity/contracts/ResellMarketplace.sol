@@ -10,7 +10,6 @@ import {CountersUpgradeable} from '@openzeppelin/contracts-upgradeable/utils/Cou
 import {ERC1155Upgradeable} from '@openzeppelin/contracts-upgradeable/token/ERC1155/ERC1155Upgradeable.sol';
 import {ERC20Upgradeable} from '@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol';
 import {ERC721Upgradeable} from '@openzeppelin/contracts-upgradeable/token/ERC721/ERC721Upgradeable.sol';
-import {IERC721Upgradeable} from '@openzeppelin/contracts-upgradeable/token/ERC721/IERC721Upgradeable.sol';
 
 /// TODO CHANGE CONTRACT FOR RESELL MARKETPLACE
 /// TODO CHANGE CONTRACT FOR TICKET
@@ -21,7 +20,6 @@ import {IERC721Upgradeable} from '@openzeppelin/contracts-upgradeable/token/ERC7
 contract ResellMarketplace is OwnableUpgradeable, ReentrancyGuardUpgradeable {
   uint256 public fee;
   address public recipient;
-  //IERC721Upgradeable public ticketContract;
 
   using CountersUpgradeable for CountersUpgradeable.Counter;
   CountersUpgradeable.Counter private _offerIds; //Keep track of the offers in our market
