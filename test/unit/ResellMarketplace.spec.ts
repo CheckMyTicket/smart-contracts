@@ -23,6 +23,8 @@ describe('Resell Marketplace', () => {
 
     resellMarketplaceFactory = await smock.mock<ResellMarketplace__factory>('ResellMarketplace');
     resellMarketplace = await resellMarketplaceFactory.deploy();
+    // The ticket needs to be approve in order to be list in the marketplace
+    await ticket.approve(resellMarketplace.address, 0);
     resellMarketplace.initialize('000000000000000001', '0x2F5604A290FAF5Fc8100c5A569AdeDBE61823e30');
     snapshot = await takeSnapshot();
   });
@@ -38,20 +40,30 @@ describe('Resell Marketplace', () => {
         .withArgs('0x2F5604A290FAF5Fc8100c5A569AdeDBE61823e30');
       expect(await resellMarketplace.contractIsAllowed(ticket.address)).to.be.true;
     });
+
+    it('Should set the fee', async () => {
+      let ethersToWei = ethers.utils.parseUnits('0.00056', 'ether');
+      await resellMarketplace.setFee(ethersToWei);
+      expect((await resellMarketplace.fee()).toString()).to.equal(ethersToWei.toString());
+    });
+
     it('Should create an offer', async () => {
       let ethersToWei = ethers.utils.parseUnits('0.001', 'ether');
 
       expect(await resellMarketplace.createMarketOffer(ticket.address, 0, '100000', ethersToWei)).to.emit(resellMarketplace, 'ItemOfferCreated');
     });
-    // it('Should buy an nft and mint it', async () => {
-    //   await ticket.mintTicket('0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266', { value: ethers.utils.parseEther('0.001') });
-    //   expect(await ticket.balanceOf('0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266')).to.equal('1');
-    // });
+    it('Should get an offer', async () => {
+      expect((await resellMarketplace.getOffer(1)).offerExist).to.be.true;
+    });
 
-    // it('Should fail buying an nft and minting it', async () => {
-    //   await ticket.mintTicket('0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266', { value: ethers.utils.parseEther('0.001') });
-    //   expect(await ticket.balanceOf('0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266')).to.equal('1');
-    // });
+    it('Should accept an offer', async () => {
+      //await ticket.mintTicket('0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266', { value: ethers.utils.parseEther('0.001') });
+
+      expect(await resellMarketplace.acceptOffer(1, 'ETH', { value: ethers.utils.parseEther('0.001') })).to.emit(
+        resellMarketplace,
+        'OfferAccepted'
+      );
+    });
 
     // it('Should pause the contract', async () => {
     //   expect(await ticket.pause()).to.emit(ticket, 'Paused');

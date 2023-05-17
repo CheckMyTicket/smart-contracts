@@ -10,6 +10,7 @@ import {CountersUpgradeable} from '@openzeppelin/contracts-upgradeable/utils/Cou
 import {ERC1155Upgradeable} from '@openzeppelin/contracts-upgradeable/token/ERC1155/ERC1155Upgradeable.sol';
 import {ERC20Upgradeable} from '@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol';
 import {ERC721Upgradeable} from '@openzeppelin/contracts-upgradeable/token/ERC721/ERC721Upgradeable.sol';
+import {IERC721Upgradeable} from '@openzeppelin/contracts-upgradeable/token/ERC721/IERC721Upgradeable.sol';
 
 /// TODO CHANGE CONTRACT FOR RESELL MARKETPLACE
 /// TODO CHANGE CONTRACT FOR TICKET
@@ -20,6 +21,7 @@ import {ERC721Upgradeable} from '@openzeppelin/contracts-upgradeable/token/ERC72
 contract ResellMarketplace is OwnableUpgradeable, ReentrancyGuardUpgradeable {
   uint256 public fee;
   address public recipient;
+  //IERC721Upgradeable public ticketContract;
 
   using CountersUpgradeable for CountersUpgradeable.Counter;
   CountersUpgradeable.Counter private _offerIds; //Keep track of the offers in our market
@@ -46,7 +48,7 @@ contract ResellMarketplace is OwnableUpgradeable, ReentrancyGuardUpgradeable {
     bool offerExist;
   }
   ///@dev To track offers
-  mapping(uint256 => MarketOffer) private _idToMarketOffer;
+  mapping(uint256 => MarketOffer) public _idToMarketOffer;
   mapping(address => bool) public contractIsAllowed;
 
   ///EVENTS
@@ -154,6 +156,13 @@ contract ResellMarketplace is OwnableUpgradeable, ReentrancyGuardUpgradeable {
     );
   }
 
+  ///@notice Get the data of  an offer
+  ///@param _offerId The Id of the offer
+  function getOffer(uint256 _offerId) public view returns (MarketOffer memory) {
+    require(_idToMarketOffer[_offerId].offerExist, 'The offer does not exist');
+    return _idToMarketOffer[_offerId];
+  }
+
   ///@notice Cancel an offer
   ///@param _offerId The Id of the offer
   function cancelOffer(uint256 _offerId) public {
@@ -183,12 +192,12 @@ contract ResellMarketplace is OwnableUpgradeable, ReentrancyGuardUpgradeable {
 
     //ETHEREUM
     if (keccak256(abi.encodePacked((_token))) == keccak256(abi.encodePacked(('ETH')))) {
-      uint256 offerPriceInETH = getPriceInETH(_offerId);
+      //uint256 offerPriceInETH = getPriceInETH(_offerId);
       //Implement fee
-      uint256 price = offerPriceInETH;
-      uint256 feePrice = SafeMathUpgradeable.div(SafeMathUpgradeable.mul(offerPriceInETH, fee), 100);
-      uint256 priceAfterFee = SafeMathUpgradeable.sub(price, feePrice);
-      sendFeeETH(feePrice);
+      uint256 price = _idToMarketOffer[_offerId].price;
+      //uint256 feePrice = SafeMathUpgradeable.div(SafeMathUpgradeable.mul(offerPriceInETH, fee), 100);
+      uint256 priceAfterFee = SafeMathUpgradeable.sub(price, fee);
+      sendFeeETH(fee);
 
       (bool sent, ) = owner.call{value: priceAfterFee}('');
       require(sent, 'Failed transfer');
@@ -204,12 +213,12 @@ contract ResellMarketplace is OwnableUpgradeable, ReentrancyGuardUpgradeable {
 
   ///@notice Get price of the offer in ETH
   ///@dev Notice the units
-  function getPriceInETH(uint256 _offerId) public view returns (uint256) {
-    address daiEth = 0x773616E4d11A78F511299002da57A0a94577F1f4;
-    uint256 ethPrice = uint256(getLatestPrice(daiEth));
-    uint256 offerPriceInETH = SafeMathUpgradeable.mul(_idToMarketOffer[_offerId].price, ethPrice);
-    return offerPriceInETH;
-  }
+  // function getPriceInETH(uint256 _offerId) public view returns (uint256) {
+  //   address daiEth = 0x773616E4d11A78F511299002da57A0a94577F1f4;
+  //   uint256 ethPrice = uint256(getLatestPrice(daiEth));
+  //   uint256 offerPriceInETH = SafeMathUpgradeable.mul(_idToMarketOffer[_offerId].price, ethPrice);
+  //   return offerPriceInETH;
+  // }
 
   ///@notice Using this function will send ETH to the recipient
   ///@param _fee The cost of the fee
